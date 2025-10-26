@@ -357,25 +357,21 @@ async def list_datasets(namespace: Optional[str] = None):
     """
     List all datasets (optional: filtered by namespace).
 
-    This is a convenience endpoint not directly in DatasetManager.
-
     Args:
         namespace: Optional namespace filter
 
     Returns:
-        List of version strings
+        List of dataset version information
 
     Example:
         GET /api/v1/datasets/list
         GET /api/v1/datasets/list?namespace=analytics
     """
     try:
-        # This would require adding a list method to DatasetManager
-        # For now, return a placeholder
+        datasets = manager.list(namespace=namespace)
         return {
             "status": "success",
-            "message": "List endpoint - to be implemented",
-            "data": {"namespace": namespace},
+            "data": datasets,
         }
 
     except Exception as e:

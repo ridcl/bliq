@@ -21,18 +21,17 @@ function DatasetList() {
     try {
       setLoading(true);
 
-      // For now, we'll use a placeholder list since the API doesn't have a list endpoint yet
-      // In production, this would call /api/v1/datasets/list
+      const response = await fetch('http://localhost:8000/api/v1/datasets/list');
 
-      // Hardcoded example datasets that might exist
-      const exampleDatasets = [
-        { name: 'test/employees/v1', namespace: 'test', dataset: 'employees', version: 'v1' },
-        { name: 'analytics/users/v1', namespace: 'analytics', dataset: 'users', version: 'v1' },
-        { name: 'analytics/users/v2', namespace: 'analytics', dataset: 'users', version: 'v2' },
-      ];
+      if (!response.ok) {
+        throw new Error('Failed to fetch datasets');
+      }
 
-      setDatasets(exampleDatasets);
-      setFilteredDatasets(exampleDatasets);
+      const result = await response.json();
+      const datasetList = result.data || [];
+
+      setDatasets(datasetList);
+      setFilteredDatasets(datasetList);
       setError(null);
     } catch (err) {
       setError(err.message);

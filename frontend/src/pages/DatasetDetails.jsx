@@ -61,8 +61,20 @@ function DatasetDetails() {
       for (let i = 0; i < table.numRows; i++) {
         const row = {};
         for (const field of table.schema.fields) {
-          const column = table.getChild(field.name);
-          row[field.name] = column.get(i);
+          try {
+            const column = table.getChild(field.name);
+            const value = column.get(i);
+
+            // Convert Arrow types to plain JavaScript values
+            if (value && typeof value === 'object' && value.toJSON) {
+              row[field.name] = value.toJSON();
+            } else {
+              row[field.name] = value;
+            }
+          } catch (err) {
+            console.error(`Error converting field ${field.name} at row ${i}:`, err);
+            row[field.name] = `<conversion error>`;
+          }
         }
         rows.push(row);
       }
@@ -176,7 +188,7 @@ function formatValue(value) {
     return value.toLocaleString();
   }
 
-  if (value instanceof Date || (typeof value === 'object' && value.constructor.name.includes('Timestamp'))) {
+  if (value instanceof Date || (typeof value === 'object' && value.constructor && value.constructor.name.includes('Timestamp'))) {
     try {
       return new Date(value).toLocaleString();
     } catch {
@@ -185,7 +197,16 @@ function formatValue(value) {
   }
 
   if (typeof value === 'object') {
-    return JSON.stringify(value);
+    try {
+      // Handle Arrow Vector objects and other complex structures
+      if (value.toJSON) {
+        return JSON.stringify(value.toJSON());
+      }
+      return JSON.stringify(value);
+    } catch (err) {
+      // If JSON.stringify fails, show type info instead
+      return `<${value.constructor?.name || 'Object'}>`;
+    }
   }
 
   return String(value);

@@ -499,3 +499,61 @@ class DatasetManager:
             lines.append(f"  [{idx}] {block_id}.parquet")
 
         return "\n".join(lines)
+
+    def list(self, namespace: Optional[str] = None) -> list[dict]:
+        """
+        List all dataset versions, optionally filtered by namespace.
+
+        Args:
+            namespace: Optional namespace filter (e.g., "test", "analytics")
+
+        Returns:
+            List of dicts with dataset information, each containing:
+            - name: Full qualified name with version (e.g., "test/employees/v1")
+            - namespace: Namespace part
+            - dataset: Dataset name part
+            - version: Version part
+            - row_count: Number of rows
+            - created_at: Creation timestamp
+
+        Example:
+            >>> datasets = manager.list()
+            >>> for ds in datasets:
+            ...     print(f"{ds['name']}: {ds['row_count']} rows")
+            test/employees/v1: 100 rows
+            analytics/users/v1: 500 rows
+
+            >>> # Filter by namespace
+            >>> test_datasets = manager.list(namespace="test")
+        """
+        from bliq.metastore import Dataset, Version
+
+        # Build query
+        query = Version.select(
+            Version, Dataset.namespace, Dataset.name
+        ).join(Dataset)
+
+        # Apply namespace filter if provided
+        if namespace:
+            query = query.where(Dataset.namespace == namespace)
+
+        # Order by creation time (newest first)
+        query = query.order_by(Version.created_at.desc())
+
+        # Build result list
+        results = []
+        for version in query:
+            results.append(
+                {
+                    "name": f"{version.dataset.namespace}/{version.dataset.name}/{version.version}",
+                    "namespace": version.dataset.namespace,
+                    "dataset": version.dataset.name,
+                    "version": version.version,
+                    "row_count": version.row_count,
+                    "created_at": version.created_at.isoformat()
+                    if version.created_at
+                    else None,
+                }
+            )
+
+        return results
