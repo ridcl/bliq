@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv:*)",
+      "Bash(~/.local/bin/uv run uvicorn main:app --reload)",
+      "Bash(curl:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(sudo chown:*)",
+      "Bash(npm run dev:*)",
+      "Bash(uv run python3:*)",
+      "Bash(pkill:*)",
+      "Bash(uv run:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(tree:*)",
+      "Bash(lsof:*)",
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(python3:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
