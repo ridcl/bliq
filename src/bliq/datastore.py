@@ -115,7 +115,7 @@ class LocalDataStore(DataStore):
 
         Args:
             base_path: Base directory for storing datasets
-                      (e.g., "/data/catalogue")
+                      (e.g., "/data/bliq/datastore")
         """
         self.base_path = os.path.abspath(base_path)
 

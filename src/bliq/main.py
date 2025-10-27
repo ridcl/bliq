@@ -10,6 +10,7 @@ from typing import Optional, List
 from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pyarrow as pa
 import pyarrow.ipc
@@ -34,13 +35,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize MetaStore and DataStore
-METASTORE_URL = os.getenv("METADATA_DB_URL", "sqlite:///./data/metadata.db")
-DATASTORE_URL = os.getenv("STORAGE_BASE_PATH", "/data/catalogue")
+# Configuration
+METASTORE_URL = os.getenv("METASTORE_URL", "sqlite:////data/bliq/metastore.db")
+DATASTORE_URL = os.getenv("DATASTORE_URL", "/data/bliq/datastore")
 
-metastore = MetaStore(METASTORE_URL)
-datastore = LocalDataStore(DATASTORE_URL)  # TODO: make fully configurable via URL
-manager = DatasetManager(metastore, datastore)
+# Global variables for stores (initialized in startup)
+metastore = None
+datastore = None
+manager = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Run migrations and initialize stores on startup."""
+    import logging
+    from bliq.migrations.runner import MigrationRunner
+
+    global metastore, datastore, manager
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info(f"Running database migrations on: {METASTORE_URL}")
+
+        # Ensure directory exists for SQLite
+        if METASTORE_URL.startswith("sqlite"):
+            db_path = METASTORE_URL.replace("sqlite:///", "")
+            db_dir = os.path.dirname(os.path.abspath(db_path))
+            if db_dir:
+                os.makedirs(db_dir, exist_ok=True)
+
+        # Run migrations
+        runner = MigrationRunner(METASTORE_URL)
+        runner.migrate()
+        runner.close()
+
+        logger.info("✓ Migrations completed successfully")
+
+        # Initialize stores after migrations
+        metastore = MetaStore(METASTORE_URL)
+        datastore = LocalDataStore(DATASTORE_URL)
+        manager = DatasetManager(metastore, datastore)
+
+        logger.info("✓ Stores initialized successfully")
+
+    except Exception as e:
+        logger.error(f"✗ Startup failed: {e}")
+        import traceback
+
+        traceback.print_exc()
+        raise RuntimeError(f"Failed to start application: {e}")
 
 
 # ============================================================================
@@ -378,6 +422,28 @@ async def list_datasets(namespace: Optional[str] = None):
         raise HTTPException(
             status_code=500, detail=f"Failed to list datasets: {str(e)}"
         )
+
+
+# ============================================================================
+# Static Files (Frontend)
+# ============================================================================
+
+# Mount static files for production deployment
+# Frontend dist directory is expected at ../frontend/dist relative to this file
+FRONTEND_DIST = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "frontend", "dist"
+)
+
+if os.path.exists(FRONTEND_DIST):
+    # Serve static assets (JS, CSS, images)
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+        name="assets",
+    )
+
+    # Serve index.html for all other routes (SPA routing)
+    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
 
 
 if __name__ == "__main__":

@@ -149,8 +149,7 @@ class MetaStore:
         # Bind models to database
         self.db.bind([Dataset, Version, Block])
 
-        # Create tables if they don't exist
-        self.db.create_tables([Dataset, Version, Block], safe=True)
+        # Note: Tables are created via migrations, not here
 
     def create_dataset_with_version(
         self,
@@ -520,8 +519,8 @@ def create_metadata_store(database_url: Optional[str] = None) -> MetaStore:
 
     Args:
         database_url: Database connection string. If not provided,
-                     uses METADATA_DB_URL environment variable or defaults
-                     to "sqlite:///./data/metadata.db"
+                     uses METASTORE_URL environment variable or defaults
+                     to "sqlite:////data/bliq/metastore.db"
 
     Returns:
         MetaStore instance
@@ -533,6 +532,6 @@ def create_metadata_store(database_url: Optional[str] = None) -> MetaStore:
     import os
 
     if database_url is None:
-        database_url = os.getenv("METADATA_DB_URL", "sqlite:///./data/metadata.db")
+        database_url = os.getenv("METASTORE_URL", "sqlite:////data/bliq/metastore.db")
 
     return MetaStore(database_url)
