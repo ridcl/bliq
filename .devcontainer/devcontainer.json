@@ -2,7 +2,7 @@
 	"name": "Existing Dockerfile",
 	"build": {
 		"context": "..",
-		"dockerfile": "../Dockerfile",
+		"dockerfile": "../Dockerfile.dev",
 		"target": "build-dev"
 	},
 	"mounts": [
@@ -11,7 +11,7 @@
 	"containerEnv": {
 		"PYTHONPATH": "src",
 		"AZURE_STORAGE_CONNECTION_STRING": "${localEnv:BLIQ_AZURE_STORAGE_CONNECTION_STRING}",
-		"METASTORE_CONNECTION_STRING": "sqlite:///data/metastore.db"
+		"METASTORE_CONNECTION_STRING": "sqlite:////data/metastore.db"
 	},
 	"postCreateCommand": "bash .devcontainer/init.sh",
 	"customizations": {

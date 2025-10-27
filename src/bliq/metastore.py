@@ -5,21 +5,21 @@ This provides a clean, simple abstraction for tracking dataset metadata
 without the complexity of manual SQL queries.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
-from dataclasses import dataclass
+
 from peewee import (
-    Model,
-    CharField,
-    TextField,
-    IntegerField,
     BigIntegerField,
+    CharField,
     DateTimeField,
     ForeignKeyField,
-    SqliteDatabase,
+    IntegerField,
+    Model,
     PostgresqlDatabase,
+    SqliteDatabase,
+    TextField,
 )
-
 
 # ============================================================================
 # Models

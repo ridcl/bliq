@@ -4,20 +4,21 @@ FastAPI REST API for Bliq Dataset Catalog.
 Exposes DatasetManager functionality via HTTP endpoints.
 """
 
-import os
 import io
-from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Request, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, PlainTextResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+import os
+from typing import List, Optional
+
 import pyarrow as pa
 import pyarrow.ipc
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse, Response
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
+from bliq.datastore import LocalDataStore
 from bliq.manager import DatasetManager
 from bliq.metastore import MetaStore
-from bliq.datastore import LocalDataStore
 
 # Initialize app
 app = FastAPI(
@@ -49,6 +50,7 @@ manager = None
 async def startup_event():
     """Run migrations and initialize stores on startup."""
     import logging
+
     from bliq.migrations.runner import MigrationRunner
 
     global metastore, datastore, manager

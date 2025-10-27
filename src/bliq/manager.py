@@ -4,17 +4,18 @@ DatasetManager - High-level interface for dataset operations.
 Coordinates between metadata store and data store to provide a unified API.
 """
 
-import uuid
 import json
 import random
 import string
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
-from pyarrow import Table
-import pyarrow as pa
 
-from bliq.metastore import MetaStore, BlockInfo
+import pyarrow as pa
+from pyarrow import Table
+
 from bliq.datastore import DataStore
+from bliq.metastore import BlockInfo, MetaStore
 
 
 def create_test_table(num_rows: int = 100, seed: Optional[int] = None) -> Table:
@@ -529,9 +530,7 @@ class DatasetManager:
         from bliq.metastore import Dataset, Version
 
         # Build query
-        query = Version.select(
-            Version, Dataset.namespace, Dataset.name
-        ).join(Dataset)
+        query = Version.select(Version, Dataset.namespace, Dataset.name).join(Dataset)
 
         # Apply namespace filter if provided
         if namespace:
@@ -550,9 +549,9 @@ class DatasetManager:
                     "dataset": version.dataset.name,
                     "version": version.version,
                     "row_count": version.row_count,
-                    "created_at": version.created_at.isoformat()
-                    if version.created_at
-                    else None,
+                    "created_at": (
+                        version.created_at.isoformat() if version.created_at else None
+                    ),
                 }
             )
 

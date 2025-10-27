@@ -6,7 +6,8 @@ Uses Apache Arrow for efficient data serialization over HTTP.
 """
 
 import io
-from typing import Optional, List, Union
+from typing import List, Optional, Union
+
 import pandas as pd
 import pyarrow as pa
 import requests

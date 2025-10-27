@@ -8,16 +8,11 @@ This runner:
 4. Works with both SQLite and PostgreSQL
 """
 
-from typing import Optional
-from peewee import (
-    Model,
-    CharField,
-    DateTimeField,
-    SqliteDatabase,
-    PostgresqlDatabase,
-)
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Optional
+
+from peewee import CharField, DateTimeField, Model, PostgresqlDatabase, SqliteDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +77,11 @@ class MigrationRunner:
 
     def _is_migration_applied(self, migration_name: str) -> bool:
         """Check if a migration has been applied."""
-        return MigrationHistory.select().where(
-            MigrationHistory.migration_name == migration_name
-        ).exists()
+        return (
+            MigrationHistory.select()
+            .where(MigrationHistory.migration_name == migration_name)
+            .exists()
+        )
 
     def _record_migration(self, migration_name: str):
         """Record that a migration has been applied."""
@@ -111,7 +108,7 @@ class MigrationRunner:
             logger.info(f"Applying migration: {migration_name}")
 
             # Import models here to avoid circular imports
-            from bliq.metastore import Dataset, Version, Block
+            from bliq.metastore import Block, Dataset, Version
 
             # Bind models to this database
             self.db.bind([Dataset, Version, Block])
@@ -145,7 +142,8 @@ class MigrationRunner:
         ]
 
         pending_migrations = [
-            m for m in all_migrations
+            m
+            for m in all_migrations
             if not any(am.migration_name == m for am in applied_migrations)
         ]
 

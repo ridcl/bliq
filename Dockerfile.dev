@@ -64,7 +64,10 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     npm \
     && apt-get clean \
-    && pip install uv --break-system-packages
+    && pip install uv --break-system-packages \
+    && npm cache clean -f \
+    && npm install -g n \
+    && n stable
 
 ## Add user & enable sudo
 
@@ -100,7 +103,10 @@ COPY --chown=${USERNAME}:${USERNAME} . "$BUILD_DIR"
 
 
 WORKDIR "${BUILD_DIR}/src"
-RUN uv lock && uv sync --active
+RUN uv lock && uv sync --active --extra all
+
+WORKDIR "${BUILD_DIR}/frontend"
+RUN npm install
 WORKDIR /home/${USERNAME}
 
 

@@ -1,113 +1,96 @@
-# FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS build-base
-FROM ubuntu:24.04 AS build-base
-RUN userdel -r ubuntu
+# Multi-stage Dockerfile for Bliq production deployment
+# Builds frontend (React) and backend (FastAPI) in a single image
 
+FROM node:20-slim AS frontend-build
 
-## Basic system setup
+WORKDIR /frontend
 
-SHELL ["/bin/bash", "-c"]
+# Copy frontend package files
+COPY frontend/package*.json ./
 
+# Install dependencies
+RUN npm ci --only=production
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    TERM=linux
+# Copy frontend source
+COPY frontend/ ./
 
-ENV TERM=xterm-color
+# Build frontend for production
+RUN npm run build
 
-ENV LANGUAGE=en_US.UTF-8 \
-    LANG=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8 \
-    LC_CTYPE=en_US.UTF-8 \
-    LC_MESSAGES=en_US.UTF-8
+# ============================================
+# Backend build stage
+# ============================================
+FROM python:3.11-slim AS backend-build
 
-RUN apt-get update && apt install -y --no-install-recommends \
-        build-essential \
-        ca-certificates \
-        curl \
-        git \
-        gpg \
-        gpg-agent \
-        less \
-        libbz2-dev \
-        libffi-dev \
-        liblzma-dev \
-        libncurses5-dev \
-        libncursesw5-dev \
-        libreadline-dev \
-        libsqlite3-dev \
-        libssl-dev \
-        llvm \
-        locales \
-        tk-dev \
-        tzdata \
-        unzip \
-        vim \
-        wget \
-        xz-utils \
-        zlib1g-dev \
-        zstd \
-    && sed -i "s/^# en_US.UTF-8 UTF-8$/en_US.UTF-8 UTF-8/g" /etc/locale.gen \
-    && locale-gen \
-    && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
-    && apt clean
-
-## System packages
-
-ENV PYTHONFAULTHANDLER=1 \
-    PYTHONHASHSEED=random \
-    PYTHONUNBUFFERED=1
-
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    openssh-server \
-    python-is-python3 \
-    python3 \
-    python3-pip \
-    npm \
-    && apt-get clean \
-    && pip install uv --break-system-packages
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-## Add user & enable sudo
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-ARG USERNAME=devpod
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+WORKDIR /app
 
-RUN groupadd --gid $USER_GID ${USERNAME} \
-    && useradd --uid $USER_UID --gid $USER_GID -ms /bin/bash ${USERNAME} \
-    && usermod -aG sudo ${USERNAME} \
-    && apt-get install -y sudo \
-    && apt-get clean \
-    && echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers \
-    && echo 'export PATH=${PATH}:~/.local/bin' >> /home/${USERNAME}/.bashrc
+# Copy backend files
+COPY pyproject.toml uv.lock ./
+COPY src/ ./src/
 
-USER ${USERNAME}
-WORKDIR /home/${USERNAME}
+# Create venv and install dependencies
+RUN uv venv /venv && \
+    uv pip install --no-cache -r pyproject.toml
 
-## Python packages
+# ============================================
+# Production runtime stage
+# ============================================
+FROM python:3.11-slim
 
-# avoid uv warning related to Windows/Linux compatibility issues
-ENV UV_LINK_MODE=copy
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# create globally visible venv
-# also set $VIRTUAL_ENV which will be used by uv
-ENV VIRTUAL_ENV=/venv
-RUN sudo mkdir "$VIRTUAL_ENV" \
-    && sudo chown -R ${USERNAME}:${USERNAME} "$VIRTUAL_ENV"
+# Create non-root user
+RUN useradd -m -u 1000 bliq
 
-# install the project
-ENV BUILD_DIR=/app
-COPY --chown=${USERNAME}:${USERNAME} . "$BUILD_DIR"
+WORKDIR /app
 
+# Copy Python virtual environment from build stage
+COPY --from=backend-build /venv /venv
 
-WORKDIR "${BUILD_DIR}/src"
-RUN uv lock && uv sync --active
-WORKDIR /home/${USERNAME}
+# Copy backend source
+COPY --from=backend-build /app/src ./src
 
+# Copy built frontend from frontend-build stage into src directory
+# (main.py expects it at ../frontend/dist relative to src/bliq/main.py)
+COPY --from=frontend-build /frontend/dist ./frontend/dist
 
-###########################################################
-FROM build-base AS build-dev
+# Set up directories for data storage
+RUN mkdir -p /data/metastore /data/datastore && \
+    chown -R bliq:bliq /app /data
 
-## Other tools
-RUN sudo npm install -g @anthropic-ai/claude-code
+# Switch to non-root user
+USER bliq
 
-CMD ["echo", "Find the missing piece!"]
+# Set environment variables
+# These are defaults that can be overridden at runtime with -e or --env-file
+ENV PATH="/venv/bin:${PATH}" \
+    PYTHONPATH=/app \
+    VIRTUAL_ENV=/venv
+
+# Default storage locations (can be overridden)
+ENV METASTORE_URL="sqlite:////data/metastore/bliq.db" \
+    DATASTORE_URL="file:///data/datastore"
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run migrations and start server
+# Migrations use METASTORE_URL from environment
+CMD ["sh", "-c", "bliq migrate && uvicorn bliq.main:app --host 0.0.0.0 --port 8000"]

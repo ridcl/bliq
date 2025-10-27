@@ -15,7 +15,7 @@ This guide covers how to build and run the Bliq server Docker image, which inclu
 
 ## Building the Docker Image
 
-The Dockerfile (`Dockerfile.prod`) creates a multi-stage build that:
+The Dockerfile (`Docker`) creates a multi-stage build that:
 1. Builds the React frontend (Vite)
 2. Packages the Python backend (FastAPI)
 3. Creates a minimal production image with both components
@@ -23,7 +23,7 @@ The Dockerfile (`Dockerfile.prod`) creates a multi-stage build that:
 ### Build Command
 
 ```bash
-docker build -f Dockerfile.prod -t bliq:latest .
+docker build -f Docker -t bliq:latest .
 ```
 
 **Build arguments:**
@@ -390,7 +390,7 @@ print('✓ Connection successful')
 ```bash
 docker buildx build \
   --platform linux/arm64 \
-  -f Dockerfile.prod \
+  -f Docker \
   -t bliq:latest-arm64 \
   .
 ```
@@ -400,7 +400,7 @@ docker buildx build \
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -f Dockerfile.prod \
+  -f Docker \
   -t myregistry/bliq:latest \
   --push \
   .

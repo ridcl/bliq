@@ -5,13 +5,14 @@ This module provides a clean abstraction for reading/writing parquet blocks
 to different storage backends (local disk, Azure Blob Storage, etc.).
 """
 
-import os
 import io
+import os
 from abc import ABC, abstractmethod
 from typing import List, Optional
+
+import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
-import duckdb
 
 
 def _build_duckdb_query(

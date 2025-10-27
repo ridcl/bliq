@@ -7,8 +7,8 @@ Server commands require installation with: pip install bliq[server]
 
 import os
 import sys
-import click
 
+import click
 
 # Check if server dependencies are available
 try:
@@ -131,10 +131,11 @@ def migration_status(connection_string):
 @require_server
 def list_datasets(connection_string, namespace):
     """List datasets in the catalog. (Requires: pip install bliq[server])"""
-    from bliq.metastore import MetaStore
+    import os
+
     from bliq.datastore import LocalDataStore
     from bliq.manager import DatasetManager
-    import os
+    from bliq.metastore import MetaStore
 
     try:
         metastore = MetaStore(connection_string)
@@ -178,10 +179,11 @@ def show_dataset(connection_string, name):
 
     NAME should be the full qualified name with version (e.g., test/employees/v1)
     """
-    from bliq.metastore import MetaStore
+    import os
+
     from bliq.datastore import LocalDataStore
     from bliq.manager import DatasetManager
-    import os
+    from bliq.metastore import MetaStore
 
     try:
         metastore = MetaStore(connection_string)
