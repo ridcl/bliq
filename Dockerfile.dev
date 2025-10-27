@@ -103,7 +103,7 @@ COPY --chown=${USERNAME}:${USERNAME} . "$BUILD_DIR"
 
 
 WORKDIR "${BUILD_DIR}/src"
-RUN uv lock && uv sync --active --extra all
+RUN uv lock && uv sync --active --extra all --extra dev
 
 WORKDIR "${BUILD_DIR}/frontend"
 RUN npm install

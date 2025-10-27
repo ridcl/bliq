@@ -185,7 +185,7 @@ For production deployments with web UI:
 
 ```bash
 # Build image
-docker build -f Docker -t bliq:latest .
+docker build -f Dockerfile -t bliq:latest .
 
 # Run with default settings (SQLite + local storage)
 docker run -d \
