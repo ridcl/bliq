@@ -114,6 +114,5 @@ WORKDIR /home/${USERNAME}
 FROM build-base AS build-dev
 
 ## Other tools
-RUN sudo npm install -g @anthropic-ai/claude-code
 
 CMD ["echo", "Find the missing piece!"]
