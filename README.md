@@ -12,13 +12,28 @@ Bliq consists of three principal components:
 
 ## Run in Docker
 
-The simplest way to run API and UI is using Docker image.
+The simplest way to run API and UI is using `docker compose`.
 
--- TODO: publish image, add example
+```bash
+git clone https://github.com/ridcl/bliq.git
+cd bliq
 
-For detaild instructions and examples, see [Docker.md].
+docker compose up
+```
 
-## Local installation
+By default, this command creates local datastore in `./data/datastore` and SQLite metastore in `./data/metastore/bliq.db`. To overwrite it, set corresponding environment
+variables. For example:
+
+```bash
+export METASTORE_URL="postgresql://user:pass@localhost:5432/bliq"
+export DATASTORE_URL="azure://my-bucket/datasets"
+
+docker compose up
+```
+
+(See/modify `docker-compose.yml` for additional settings or credentials).
+
+## Installation
 
 ### Client Only (Default)
 
@@ -158,49 +173,3 @@ npm run dev
 ```
 
 The UI will be available at http://localhost:5173
-
-### CLI Commands
-
-```bash
-# Run database migrations
-bliq migrate
-
-# Check migration status
-bliq migration-status
-
-# List datasets
-bliq list-datasets
-bliq list-datasets --namespace team
-
-# Show dataset details
-bliq show-dataset team/users/v1
-
-# Start server
-bliq serve
-```
-
-## Docker Deployment
-
-For production deployments with web UI:
-
-```bash
-# Build image
-docker build -f Dockerfile -t bliq:latest .
-
-# Run with default settings (SQLite + local storage)
-docker run -d \
-  --name bliq \
-  -p 8000:8000 \
-  -v bliq-data:/data \
-  bliq:latest
-
-# Run with PostgreSQL + S3
-docker run -d \
-  --name bliq \
-  -p 8000:8000 \
-  -e METASTORE_URL="postgresql://user:pass@postgres:5432/bliq" \
-  -e DATASTORE_URL="s3://bucket/path" \
-  -e AWS_ACCESS_KEY_ID="..." \
-  -e AWS_SECRET_ACCESS_KEY="..." \
-  bliq:latest
-```

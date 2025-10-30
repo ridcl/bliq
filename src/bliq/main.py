@@ -4,6 +4,7 @@ FastAPI REST API for Bliq Dataset Catalog.
 Exposes DatasetManager functionality via HTTP endpoints.
 """
 
+from contextlib import asynccontextmanager
 import io
 import os
 from typing import List, Optional
@@ -20,21 +21,6 @@ from bliq.datastore import LocalDataStore
 from bliq.manager import DatasetManager
 from bliq.metastore import MetaStore
 
-# Initialize app
-app = FastAPI(
-    title="Bliq Dataset Catalog API",
-    version="1.0",
-    description="Dataset versioning and management with block-level storage",
-)
-
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Configuration
 METASTORE_URL = os.getenv("METASTORE_URL", "sqlite:////data/bliq/metastore.db")
@@ -46,8 +32,8 @@ datastore = None
 manager = None
 
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """Run migrations and initialize stores on startup."""
     import logging
 
@@ -87,7 +73,25 @@ async def startup_event():
 
         traceback.print_exc()
         raise RuntimeError(f"Failed to start application: {e}")
+    yield
 
+
+# Initialize app
+app = FastAPI(
+    title="Bliq Dataset Catalog API",
+    version="1.0",
+    description="Dataset versioning and management with block-level storage",
+    lifespan=lifespan,
+)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================================
 # Pydantic Models
