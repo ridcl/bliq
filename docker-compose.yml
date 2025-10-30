@@ -12,8 +12,8 @@ services:
       - ./data/metastore:/data/metastore
       - ./data/datastore:/data/datastore
     environment:
-      - METASTORE_URL=sqlite:////data/metastore/bliq.db
-      - DATASTORE_URL=file:///data/datastore
+      - METASTORE_URL=${METASTORE_URL:-sqlite:////data/metastore/bliq.db}
+      - DATASTORE_URL=${DATASTORE_URL:-file:///data/datastore}
     networks:
       - bliq-network
     healthcheck:
